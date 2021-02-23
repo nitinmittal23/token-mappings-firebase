@@ -1,0 +1,5 @@
+.env
+node_modules/
+config-production.env
+serviceAccountKey.json
+serviceAccountKeyMainnet.json
