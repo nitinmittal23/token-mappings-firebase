@@ -2,13 +2,18 @@ const config = require("../config/config");
 const cron = require("node-cron");
 const axios = require("axios").default;
 const utils = require("./utils")
-
+var fs = require('fs');
+const Web3 = require('web3');
 const MetaNetwork = require('@maticnetwork/meta/network')
 
 const network = new MetaNetwork(
     config.matic.deployment.network,
     config.matic.deployment.version,
 )
+
+const { abi } = require("./abi")
+const provider = new Web3.providers.HttpProvider(network.Matic.RPC)
+const web3 = new Web3(provider)
 
 // connect to firebase 
 var admin = require("firebase-admin");
@@ -224,29 +229,140 @@ update the firebase if got new mapping from firebase */
 //     }
 // });
 
-// getMappings().then(mappings=> {
-//     errorMappings = [];
-//     updatedMappings = [];
-//     let data = mappings
-//         .filter(mapping => 
-//             mapping.childToken === "0x7ceb23fd6bc0add59e62ac25578270cff1b9f619"
-//         )
-//     console.log(data)
-//     // mappingCheck(data).then(()=> {
-//     //     let updated = JSON.stringify(updatedMappings)
-//     //     let errored = JSON.stringify(errorMappings)
-//     //     console.log(updated)
-//     //     console.log(errored)
-//     //     //notifyAdmin({updated, errored})
-        
-//     // })
-// })
+async function temporaryScript(){
+    let mappings = await db.collection('posERC20TokenList').get()
 
-db.collection('posERC20TokenList').get().then((data)=> {
-    data.docs.map(doc=> {
-        if(doc.data())
-            if(doc.data().symbol == 'CHAIN'){
-                console.log(doc.data())
-            }
-    })
-})
+    for (let i = 0; i < mappings.docs.length; i++){
+        let a = mappings.docs[i].data()
+        if(a.isMetaTx === false){
+            //console.log(a)
+            continue;
+        }
+
+        let data = {
+            isMetaTx: false,
+            updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        }
+        db.collection('posERC20TokenList').doc(a.id).update(data).then(()=> {
+            console.log("updated in firebase")
+        })
+        
+        // const data = await web3.eth.abi.encodeFunctionCall(
+        //     {
+        //         name: 'getNonce',
+        //         type: 'function',
+        //         inputs: [
+        //         {
+        //             name: 'user',
+        //             type: 'address',
+        //         },
+        //         ],
+        //     },
+        //     ["0xFd71Dc9721d9ddCF0480A582927c3dCd42f3064C"],
+        // )
+
+        // await web3.eth.call({
+        //     to: a.addresses['137'],
+        //     data,
+        // }).then(d => {
+            
+            
+        // }).catch(err => {
+        //     let data = {
+        //         isMetaTx: false,
+        //         updatedAt: admin.firestore.FieldValue.serverTimestamp()
+        //     }
+        //     console.log(a.id)
+        //     console.log(data)
+        //     db.collection('posERC20TokenList').doc(a.id).update(data).then(()=> {
+        //         console.log("updated in firebase")
+        //     })
+        // })
+
+        
+    }
+    
+}
+
+temporaryScript();
+
+// async function updateInBiconomy(){
+//     let mappings = await db.collection('posERC20TokenList').get()
+//     for (let i = 0; i < mappings.docs.length; i++){
+//         let a = mappings.docs[i].data()
+//         if(a.isMetaTx === false){
+//             // console.log(a.id)
+//             // const data = await web3.eth.abi.encodeFunctionCall(
+//             //     {
+//             //         name: 'getNonce',
+//             //         type: 'function',
+//             //         inputs: [
+//             //         {
+//             //             name: 'user',
+//             //             type: 'address',
+//             //         },
+//             //         ],
+//             //     },
+//             //     ["0xFd71Dc9721d9ddCF0480A582927c3dCd42f3064C"],
+//             // )
+
+//             // await web3.eth.call({
+//             //     to: a.addresses['137'],
+//             //     data,
+//             // }).then(d => {
+//             //     let data = {
+//             //         isMetaTx: true,
+//             //         updatedAt: admin.firestore.FieldValue.serverTimestamp()
+//             //     }
+//             //     console.log(a.id)
+//             //     console.log(data)
+//             //     db.collection('posERC20TokenList').doc(a.id).update(data).then(()=> {
+//             //         console.log("updated in firebase")
+//             //     })
+                
+                
+//             // }).catch(err => {
+                
+//             // })
+            
+//         }
+
+//         else {
+//             let url = "https://api.biconomy.io/api/v1/smart-contract/public-api/addContract";
+//             let body = {
+//                 "contractName" : a.name,
+//                 "contractAddress" : a.addresses['137'],
+//                 "abi" : JSON.stringify(abi),
+//                 "contractType" : "SC",
+//                 "metaTransactionType": "DEFAULT"
+//             }
+//             let response = await utils.apiCall({url, body})
+//             // console.log("addcontract", response)
+//             // console.log(a.name.concat("_executeMetaTx"))
+//             if(response.code === 200){
+//                 console.log("aaaa")
+//                 let url2 = "https://api.biconomy.io/api/v1/meta-api/public-api/addMethod";
+//                 let body1 = {
+//                     "apiType": "native",
+//                     "methodType": "write",
+//                     "name": a.name.concat("_executeMetaTx"),
+//                     "contractAddress": a.addresses['137'],
+//                     "method": "executeMetaTransaction"
+//                 }
+//                 let addMethod = await utils.apiCall({url: url2, body: body1})
+//                 //console.log("addmethod", addMethod)
+//                 if(addMethod.code === 200){
+//                     console.log('bbb')
+//                 } else {
+//                     // console.log(a.name, a.id)
+//                 }
+//             }else {
+//                 // console.log(a.name, a.id)
+//             }
+//         }
+        
+//     }
+    
+// }
+
+// updateInBiconomy();

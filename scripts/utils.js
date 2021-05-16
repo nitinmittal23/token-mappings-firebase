@@ -1,6 +1,7 @@
 const config = require("../config/config");
 const Web3 = require('web3');
 const MetaNetwork = require('@maticnetwork/meta/network')
+const fetch = require('node-fetch')
 
 const network = new MetaNetwork(
     config.matic.deployment.network,
@@ -45,4 +46,25 @@ async function getTokenDetails(type, mapping){
     }
 }
 
-module.exports = { getTokenDetails, uuidv4 }
+async function apiCall(params){
+    let url = params.url;
+    let headers = {
+        "apiKey": config.BICONOMY_API_KEY,
+        "authToken": config.BICONOMY_AUTH_TOKEN
+    }
+    let body = params.body
+
+    return fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+            ...headers,
+        },
+        body: JSON.stringify(body)
+    }).then(res => {
+        return res.json()
+    })
+}
+
+module.exports = { getTokenDetails, uuidv4, apiCall }
